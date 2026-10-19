@@ -1,0 +1,39 @@
+name: Spring Boot CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Enables manual "Run workflow" button in GitHub Actions tab
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21' # Set to '17' if your pom.xml specifies Java 17
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Make Maven Wrapper Executable
+        run: chmod +x mvnw
+
+      # -Dsurefire.redirectTestOutputToFile=false streams exact test names to the console in real time
+      - name: Run Maven Tests
+        run: ./mvnw clean test -Dsurefire.redirectTestOutputToFile=false
+
+      # Upload test reports whether tests pass or fail
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: target/surefire-reports/
+          retention-days: 5
